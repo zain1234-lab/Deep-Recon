@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ report_type.title() }} Recon Report - {{ target }}</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --success-color: #27ae60;
+            --background-color: #ecf0f1;
+            --card-background: #ffffff;
+            --text-color: #2c3e50;
+            --border-color: #bdc3c7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .info-item {
+            background: rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .risk-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            margin-left: 1rem;
+        }
+
+        .risk-high { background-color: var(--danger-color); color: white; }
+        .risk-medium { background-color: var(--warning-color); color: white; }
+        .risk-low { background-color: var(--success-color); color: white; }
+
+        .card {
+            background: var(--card-background);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .card h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .card h3 {
+            color: var(--secondary-color);
+            margin: 1rem 0 0.5rem 0;
+            font-size: 1.2rem;
+        }
+
+        .ai-analysis {
+            border-left-color: var(--warning-color);
+            background: linear-gradient(135deg, #fff9e6, #ffffff);
+        }
+
+        .ai-analysis h2::before {
+            content: "🤖";
+            margin-right: 0.5rem;
+        }
+
+        .findings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .finding-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .finding-item h4 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            text-transform: capitalize;
+        }
+
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--secondary-color);
+            color: white;
+            border-radius: 8px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .vulnerability-list {
+            list-style: none;
+        }
+
+        .vulnerability-list li {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            border-radius: 4px;
+            border-left: 3px solid var(--danger-color);
+            background: #ffeaea;
+        }
+
+        .recommendation-list {
+            list-style: none;
+        }
+
+        .recommendation-list li {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            border-radius: 4px;
+            border-left: 3px solid var(--success-color);
+            background: #eafaf1;
+        }
+
+        .timestamp {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: #7f8c8d;
+            border-top: 1px solid var(--border-color);
+            margin-top: 2rem;
+        }
+
+        .collapsible {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .collapsible::after {
+            content: " ▼";
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+        }
+
+        .collapsible.active::after {
+            content: " ▲";
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .collapsible-content.active {
+            max-height: 1000px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .header-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <h1>{{ report_type.title() }} Reconnaissance Report</h1>
+            
+            <div class="header-info">
+                <div class="info-item">
+                    <strong>Target:</strong> {{ target }}
+                </div>
+                <div class="info-item">
+                    <strong>Generated:</strong> {{ timestamp }}
+                </div>
+                <div class="info-item">
+                    <strong>Modules Executed:</strong> {{ module_count }}
+                </div>
+                {% if risk_assessment %}
+                <div class="info-item">
+                    <strong>Risk Level:</strong>
+                    <span class="risk-badge risk-{{ risk_assessment.risk_level.lower() }}">
+                        {{ risk_assessment.risk_level }} ({{ risk_assessment.total_score }}/100)
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Statistics Dashboard -->
+        {% if risk_assessment %}
+        <div class="card">
+            <h2>📊 Risk Assessment Dashboard</h2>
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-number">{{ risk_assessment.total_score }}</span>
+                    Risk Score
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ module_count }}</span>
+                    Modules
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ risk_assessment.factors.values() | sum }}</span>
+                    Total Issues
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ risk_assessment.risk_level }}</span>
+                    Risk Level
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- AI Analysis Section -->
+        {% if has_ai_analysis and ai_analysis %}
+        <div class="card ai-analysis">
+            <h2>AI-Powered Security Analysis</h2>
+            
+            {% if ai_analysis.vulnerabilities %}
+            <h3>🔍 Identified Vulnerabilities</h3>
+            <ul class="vulnerability-list">
+                {% for vuln in ai_analysis.vulnerabilities %}
+                <li>{{ vuln }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% if ai_analysis.recommendations %}
+            <h3>💡 AI Recommendations</h3>
+            <ul class="recommendation-list">
+                {% for rec in ai_analysis.recommendations %}
+                <li>{{ rec }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% if ai_analysis.raw_analysis %}
+            <h3 class="collapsible" onclick="toggleCollapsible(this)">📄 Detailed AI Analysis</h3>
+            <div class="collapsible-content">
+                <div class="code-block">{{ ai_analysis.raw_analysis }}</div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Main Findings -->
+        <div class="card">
+            <h2>🔍 Reconnaissance Findings</h2>
+            <div class="findings-grid">
+                {% for module, data in findings.items() %}
+                {% if module != 'target' %}
+                <div class="finding-item">
+                    <h4>{{ module.replace('_', ' ').title() }}</h4>
+                    <div class="code-block">{{ data | tojson(indent=2) }}</div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Raw Data Section (Collapsible) -->
+        <div class="card">
+            <h2 class="collapsible" onclick="toggleCollapsible(this)">📋 Complete Raw Data</h2>
+            <div class="collapsible-content">
+                <div class="code-block">{{ findings | tojson(indent=2) }}</div>
+            </div>
+        </div>
+
+        <!-- Report Metadata -->
+        <div class="card">
+            <h2>📝 Report Metadata</h2>
+            <p><strong>Report Type:</strong> {{ report_type.title() }}</p>
+            <p><strong>Target System:</strong> {{ target }}</p>
+            <p><strong>Generation Time:</strong> {{ timestamp }}</p>
+            <p><strong>Total Modules:</strong> {{ module_count }}</p>
+            <p><strong>AI Analysis:</strong> {{ "Enabled" if has_ai_analysis else "Disabled" }}</p>
+            {% if risk_assessment %}
+            <p><strong>Risk Factors Detected:</strong> {{ risk_assessment.factors.keys() | list | join(', ') }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="card">
+            <h2>⚠️ Important Disclaimer</h2>
+            <p><strong>Legal Usage:</strong> This reconnaissance report has been generated for authorized security testing purposes only. Ensure you have proper authorization before conducting any reconnaissance activities against target systems.</p>
+            <p><strong>Data Accuracy:</strong> While this report uses automated tools and AI analysis, manual verification is recommended for critical security findings. The AI analysis is provided as additional insight and should not be the sole basis for security decisions.</p>
+            <p><strong>Privacy:</strong> Sensitive information has been sanitized from this report. Original data may contain additional details not shown here.</p>
+        </div>
+
+        <div class="footer">
+            <p>Generated by Enhanced Reconnaissance Tool v2.0</p>
+            <p class="timestamp">Report generated on {{ timestamp }}</p>
+        </div>
+    </div>
+
+    <script>
+        function toggleCollapsible(element) {
+            element.classList.toggle('active');
+            const content = element.nextElementSibling;
+            content.classList.toggle('active');
+        }
+
+        // Auto-collapse raw data section initially
+        document.addEventListener('DOMContentLoaded', function() {
+            const collapsibles = document.querySelectorAll('.collapsible');
+            collapsibles.forEach(function(collapsible) {
+                if (collapsible.textContent.includes('Complete Raw Data')) {
+                    // Keep raw data collapsed by default
+                    return;
+                }
+                // Auto-expand other sections
+                collapsible.click();
+            });
+        });
+
+        // Add smooth scrolling for internal links
+        document.

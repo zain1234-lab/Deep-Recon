@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Recon Report - {{ target }}</title>
+    <style>
+        :root {
+            --primary-color: #34495e;
+            --secondary-color: #3498db;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-bg: #f8f9fa;
+            --border-color: #dee2e6;
+            --text-color: #2c3e50;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #ffffff;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            background: var(--primary-color);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .info-box {
+            background: rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 4px;
+        }
+
+        .section {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .section h3 {
+            color: var(--secondary-color);
+            margin: 1rem 0 0.5rem 0;
+            font-size: 1.2rem;
+        }
+
+        .findings-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .finding-box {
+            background: var(--light-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1rem;
+        }
+
+        .finding-box h4 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            text-transform: capitalize;
+        }
+
+        .code-output {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat-box {
+            background: var(--secondary-color);
+            color: white;
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .ai-section {
+            background: linear-gradient(135deg, #fff8e1, #ffffff);
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .ai-section h2::before {
+            content: "🤖 ";
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .list-clean {
+            list-style: none;
+            padding: 0;
+        }
+
+        .list-clean li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .list-clean li:last-child {
+            border-bottom: none;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+            border-radius: 3px;
+            text-transform: uppercase;
+        }
+
+        .badge-success { background: var(--success-color); color: white; }
+        .badge-warning { background: var(--warning-color); color: white; }
+        .badge-danger { background: var(--danger-color); color: white; }
+        .badge-info { background: var(--secondary-color); color: white; }
+
+        .footer {
+            text-align: center;
+            padding: 2rem 0;
+            border-top: 1px solid var(--border-color);
+            margin-top: 2rem;
+            color: #6c757d;
+        }
+
+        .collapsible {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .collapsible::after {
+            content: " [Show]";
+            color: var(--secondary-color);
+            font-size: 0.8rem;
+        }
+
+        .collapsible.active::after {
+            content: " [Hide]";
+        }
+
+        .collapsible-content {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .collapsible-content.active {
+            display: block;
+        }
+
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            z-index: 1000;
+        }
+
+        .print-button:hover {
+            background: #2980b9;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .header-info {
+                grid-template-columns: 1fr;
+            }
+
+            .findings-container {
+                grid-template-columns: 1fr;
+            }
+
+            .print-button {
+                position: static;
+                margin-bottom: 1rem;
+                width: 100%;
+            }
+        }
+
+        @media print {
+            .print-button {
+                display: none;
+            }
+
+            .collapsible-content {
+                display: block !important;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button" onclick="window.print()">🖨️ Print Report</button>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Reconnaissance Report</h1>
+            <div class="header-info">
+                <div class="info-box">
+                    <strong>Target:</strong><br>{{ target }}
+                </div>
+                <div class="info-box">
+                    <strong>Generated:</strong><br>{{ timestamp }}
+                </div>
+                <div class="info-box">
+                    <strong>Modules:</strong><br>{{ module_count }}
+                </div>
+                {% if risk_assessment %}
+                <div class="info-box">
+                    <strong>Risk Level:</strong><br>
+                    <span class="badge badge-{{ 'danger' if risk_assessment.risk_level == 'HIGH' else 'warning' if risk_assessment.risk_level == 'MEDIUM' else 'success' }}">
+                        {{ risk_assessment.risk_level }}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Summary Statistics -->
+        <div class="section">
+            <h2>📊 Summary</h2>
+            <div class="summary-stats">
+                <div class="stat-box">
+                    <span class="stat-number">{{ module_count }}</span>
+                    <span class="stat-label">Modules Executed</span>
+                </div>
+                {% if risk_assessment %}
+                <div class="stat-box">
+                    <span class="stat-number">{{ risk_assessment.total_score }}</span>
+                    <span class="stat-label">Risk Score</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-number">{{ risk_assessment.factors.values() | sum }}</span>
+                    <span class="stat-label">Issues Found</span>
+                </div>
+                {% endif %}
+                <div class="stat-box">
+                    <span class="stat-number">{{ "Yes" if has_ai_analysis else "No" }}</span>
+                    <span class="stat-label">AI Analysis</span>
+                </div>
+            </div>
+
+            {% if risk_assessment %}
+            <div class="alert alert-{{ 'danger' if risk_assessment.risk_level == 'HIGH' else 'warning' if risk_assessment.risk_level == 'MEDIUM' else 'info' }}">
+                <strong>Risk Assessment:</strong> The target has been assessed with a 
+                <strong>{{ risk_assessment.risk_level }}</strong> risk level based on 
+                {{ risk_assessment.factors.values() | sum }} identified issues across multiple categories.
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- AI Analysis (if available) -->
+        {% if has_ai_analysis and ai_analysis %}
+        <div class="section ai-section">
+            <h2>AI-Powered Analysis</h2>
+            
+            {% if ai_analysis.summary %}
+            <div class="alert alert-info">
+                <strong>AI Summary:</strong> {{ ai_analysis.summary }}
+            </div>
+            {% endif %}
+
+            {% if ai_analysis.vulnerabilities %}
+            <h3>🔍 Key Vulnerabilities</h3>
+            <ul class="list-clean">
+                {% if ai_analysis.vulnerabilities is string %}
+                <li>{{ ai_analysis.vulnerabilities }}</li>
+                {% elif ai_analysis.vulnerabilities is iterable %}
+                {% for vuln in ai_analysis.vulnerabilities %}
+                <li><span class="badge badge-danger">VULN</span> {{ vuln }}</li>
+                {% endfor %}
+                {% endif %}
+            </ul>
+            {% endif %}
+
+            {% if ai_analysis.recommendations %}
+            <h3>💡 Recommendations</h3>
+            <ul class="list-clean">
+                {% if ai_analysis.recommendations is string %}
+                <li>{{ ai_analysis.recommendations }}</li>
+                {% elif ai_analysis.recommendations is iterable %}
+                {% for rec in ai_analysis.recommendations %}
+                <li><span class="badge badge-info">REC</span> {{ rec }}</li>
+                {% endfor %}
+                {% endif %}
+            </ul>
+            {% endif %}
+
+            {% if ai_analysis.raw_analysis %}
+            <h3 class="collapsible" onclick="toggleSection(this)">📄 Detailed AI Analysis</h3>
+            <div class="collapsible-content">
+                <div class="code-output">{{ ai_analysis.raw_analysis }}</div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Main Findings -->
+        <div class="section">
+            <h2>🔍 Scan Results</h2>
+            <div class="findings-container">
+                {% for module, data in findings.items() %}
+                {% if module != 'target' %}
+                <div class="finding-box">
+                    <h4>{{ module.replace('_', ' ').title() }}</h4>
+                    <div class="code-output">{{ data | tojson(indent=2) }}</div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Risk Breakdown (if available) -->
+        {% if risk_assessment %}
+        <div class="section">
+            <h2>⚠️ Risk Analysis</h2>
+            <p>The following risk factors were identified during the reconnaissance:</p>
+            
+            <div class="findings-container">
+                {% for factor, score in risk_assessment.factors.items() %}
+                {% if score > 0 %}
+                <div class="finding-box">
+                    <h4>{{ factor.replace('_', ' ').title() }}</h4>
+                    <p><span class="badge badge-{{ 'danger' if score >= 15 else 'warning' if score >= 5 else 'info' }}">{{ score }} points</span></p>
+                    <p>
+                        {% if 'open_ports' in factor %}
+                        Open ports detected that may present attack surfaces.
+                        {% elif 'ssl_issues' in factor %}
+                        SSL/TLS configuration issues that could compromise security.
+                        {% elif 'misconfigurations' in factor %}
+                        Server misconfigurations that may lead to security vulnerabilities.
+                        {% elif 'information_disclosure' in factor %}
+                        Information disclosure issues that may aid attackers.
+                        {% elif 'outdated_software' in factor %}
+                        Outdated software versions that may contain known vulnerabilities.
+                        {% else %}
+                        Security concern identified in this category.
+                        {% endif %}
+                    </p>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Raw Data (Collapsible) -->
+        <div class="section">
+            <h2 class="collapsible" onclick="toggleSection(this)">📋 Complete Data</h2>
+            <div class="collapsible-content">
+                <div class="alert alert-info">
+                    <strong>Note:</strong> This section contains the complete raw output from all reconnaissance modules.
+                </div>
+                <div class="code-output">{{ findings | tojson(indent=2) }}</div>
+            </div>
+        </div>
+
+        <!-- Report Information -->
+        <div class="section">
+            <h2>📝 Report Details</h2>
+            <div class="findings-container">
+                <div class="finding-box">
+                    <h4>Target Information</h4>
+                    <ul class="list-clean">
+                        <li><strong>Target:</strong> {{ target }}</li>
+                        <li><strong>Scan Date:</strong> {{ timestamp }}</li>
+                        <li><strong>Report Type:</strong> {{ report_type | default('Basic') }}</li>
+                    </ul>
+                </div>
+                <div class="finding-box">
+                    <h4>Scan Statistics</h4>
+                    <ul class="list-clean">
+                        <li><strong>Modules Executed:</strong> {{ module_count }}</li>
+                        <li><strong>AI Analysis:</strong> {{ "Enabled" if has_ai_analysis else "Disabled" }}</li>
+                        {% if risk_assessment %}
+                        <li><strong>Risk Score:</strong> {{ risk_assessment.total_score }}/100</li>
+                        <li><strong>Risk Level:</strong> {{ risk_assessment.risk_level }}</li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="finding-box">
+                    <h4>Tool Information</h4>
+                    <ul class="list-clean">
+                        <li><strong>Tool:</strong> Enhanced Recon Tool</li>
+                        <li><strong>Version:</strong> v2.0</li>
+                        <li><strong>Report Format:</strong> HTML Basic</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legal Disclaimer -->
+        <div class="section">
+            <h2>⚖️ Legal Notice</h2>
+            <div class="alert alert-warning">
+                <strong>Authorization Required:</strong> This reconnaissance scan should only be performed on systems you own or have explicit written permission to test. Unauthorized reconnaissance may violate applicable laws and regulations.
+            </div>
+            <div class="alert alert-info">
+                <strong>Report Accuracy:</strong> This report is generated using automated tools. Manual verification is recommended for critical findings. The information provided is based on publicly available data and automated analysis.
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Generated by Enhanced Reconnaissance Tool v2.0</strong></p>
+            <p>Report created on {{ timestamp }}</p>
+        </div>
+    </div>
+
+    <script>
+        function toggleSection(element) {
+            element.classList.toggle('active');
+            const content = element.nextElementSibling;
+            if (content && content.classList.contains('collapsible-content')) {
+                content.classList.toggle('active');
+            }
+        }
+
+        // Auto-collapse raw data section
+        document.addEventListener('DOMContentLoaded', function() {
+            const rawDataSection = document.querySelector('h2.collapsible');
+            if (rawDataSection && rawDataSection.textContent.includes('Complete Data')) {
+                // Keep collapsed by default
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                window.print();
+            }
+        });
+    </script>
+</body>
+</html>
