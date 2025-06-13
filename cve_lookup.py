@@ -123,7 +123,7 @@ class CacheManager:
 
     def _init_db(self):
         """Initialize SQLite database for persistent caching"""
-        if self.cache_file != ":memory:":
+        if self.cache_file != ":memory__":
             Path(self.cache_file).parent.mkdir(parents=True, exist_ok=True)
         
         self.conn = sqlite3.connect(self.cache_file, check_same_thread=False)
@@ -280,10 +280,14 @@ class NVDSource(CVEDataSource):
     
     def _build_cpe_string(self, product: str, version: str) -> str:
         """Build CPE string with better formatting"""
-        # Normalize product name
-        product = re.sub(r'[^a-zA-Z0-9_.-]', '_', product.lower())
-        version = re.sub(r'[^a-zA-Z0-9_.-]', '_', version.lower())
-        
+        # Normalize product and version, being less aggressive with replacement
+        # and allowing for common characters in software names/versions.
+        # NVD uses specific formats, often lowercase with hyphens or underscores
+        # for spaces/special chars, but generally keeps numbers and dots.
+        product = re.sub(r'\s+', '-', product.lower()).strip('.-_')
+        version = re.sub(r'\s+', '-', version.lower()).strip('.-_')
+        # For versions like '3.4.1.', remove trailing dots if they exist.
+        version = version.rstrip('.')
         return f"cpe:2.3:a:*:{product}:{version}:*:*:*:*:*:*:*"
     
     def _parse_cvss_metrics(self, cve_data: Dict) -> CVEMetrics:
@@ -323,7 +327,8 @@ class NVDSource(CVEDataSource):
             cpe_string = self._build_cpe_string(product, version)
             
             params = {
-                'cpeMatchString': cpe_string,
+                # Changed 'cpeMatchString' to 'virtualMatchString' as per NVD API 2.0 documentation
+                'virtualMatchString': cpe_string,
                 'resultsPerPage': 2000
             }
             
@@ -382,7 +387,7 @@ class NVDSource(CVEDataSource):
             return cves
             
         except Exception as e:
-            logger.error(f"Failed to fetch CVEs from NVD for {product} {version}: {e}")
+            logger.error(f"Failed to fetch CVEs from NVD for {product} {version} (CPE: {cpe_string}): {e}")
             return []
 
 class CVEDetailsSource(CVEDataSource):
@@ -1399,7 +1404,7 @@ def analyze_cve_findings(services: List[Dict]) -> Dict[str, Any]:
     elif overall_score > 0:
         risk_level = 'Low'
     else:
-        risk_level = 'Info'
+        return 'Info'
     
     return {
         'risk_score': round(overall_score, 2),
@@ -1870,3 +1875,4 @@ def cleanup_resources():
 # Register cleanup function for proper shutdown
 import atexit
 atexit.register(cleanup_resources)
+
