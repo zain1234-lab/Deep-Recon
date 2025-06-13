@@ -98,12 +98,12 @@ Deep-Recon is modular and can be used for single tasks or integrated into your w
 
 **CMS Detection**
 ```bash
-python cms.py --url https://targetsite.com
+python cms.py --target or -t targetsite.com
 ```
 
 **Vulnerability Scan**
 ```bash
-python vuln_scan.py --url https://targetsite.com
+python vuln_scan.py --target or -t targetsite.com
 ```
 
 **DNS Enumeration**
