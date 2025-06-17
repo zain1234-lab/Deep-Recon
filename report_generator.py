@@ -21,9 +21,12 @@ class DeepSeekAnalyzer:
         }
 
     def analyze_findings(self, findings: Dict[str, Any], analysis_type: str = "security") -> Dict[str, Any]:
-        """Analyze reconnaissance findings using DeepSeek API"""
+        """Analyze reconnaissance findings using DeepSeek API with improved error handling and retries"""
+        import time
+        max_retries = 3
+        retry_delay = 5  # seconds
+        
         try:
-            # Filter out failed findings before analysis
             filtered_findings = self._filter_successful_findings(findings)
             
             if not filtered_findings or len(filtered_findings) <= 1:  # Only target key
@@ -47,31 +50,41 @@ class DeepSeekAnalyzer:
                 "temperature": 0.3
             }
             
-            response = requests.post(self.base_url, headers=self.headers, json=payload, timeout=30)
-            
-            if response.status_code == 401:
-                return {"error": "Invalid API key", "analysis": "API authentication failed"}
-            elif response.status_code == 429:
-                return {"error": "Rate limit exceeded", "analysis": "API rate limit reached"}
-            elif response.status_code != 200:
-                return {"error": f"API error: {response.status_code}", "analysis": "API request failed"}
-            
-            response.raise_for_status()
-            
-            result = response.json()
-            if 'choices' not in result or not result['choices']:
-                return {"error": "Invalid API response", "analysis": "No analysis content received"}
-                
-            analysis = result['choices'][0]['message']['content']
-            
-            return self._parse_analysis(analysis)
-            
-        except requests.exceptions.Timeout:
-            logger.error("DeepSeek API timeout")
-            return {"error": "API timeout", "analysis": "AI analysis timed out"}
-        except requests.exceptions.ConnectionError:
-            logger.error("DeepSeek API connection error")
-            return {"error": "Connection failed", "analysis": "Unable to connect to AI service"}
+            for attempt in range(max_retries):
+                try:
+                    response = requests.post(self.base_url, headers=self.headers, json=payload, timeout=30)
+                    
+                    if response.status_code == 401:
+                        return {"error": "Invalid API key", "analysis": "API authentication failed"}
+                    elif response.status_code == 429:
+                        if attempt < max_retries - 1:
+                            time.sleep(retry_delay)
+                            continue
+                        return {"error": "Rate limit exceeded", "analysis": "API rate limit reached"}
+                    elif response.status_code != 200:
+                        return {"error": f"API error: {response.status_code}", "analysis": "API request failed"}
+                    
+                    response.raise_for_status()
+                    
+                    result = response.json()
+                    if 'choices' not in result or not result['choices']:
+                        return {"error": "Invalid API response", "analysis": "No analysis content received"}
+                    
+                    analysis = result['choices'][0]['message']['content']
+                    return self._parse_analysis(analysis)
+                except requests.exceptions.Timeout:
+                    logger.warning(f"DeepSeek API timeout on attempt {attempt + 1}")
+                    if attempt == max_retries - 1:
+                        return {"error": "API timeout", "analysis": "AI analysis timed out"}
+                except requests.exceptions.ConnectionError:
+                    logger.warning(f"DeepSeek API connection error on attempt {attempt + 1}")
+                    if attempt == max_retries - 1:
+                        return {"error": "Connection failed", "analysis": "Unable to connect to AI service"}
+                except Exception as e:
+                    logger.warning(f"DeepSeek API error on attempt {attempt + 1}: {e}")
+                    if attempt == max_retries - 1:
+                        return {"error": str(e), "analysis": "AI analysis unavailable"}
+                    time.sleep(retry_delay)
         except Exception as e:
             logger.error(f"DeepSeek analysis failed: {e}")
             return {"error": str(e), "analysis": "AI analysis unavailable"}
@@ -125,60 +138,164 @@ class DeepSeekAnalyzer:
         return False
 
     def _create_analysis_prompt(self, findings: Dict[str, Any], analysis_type: str) -> str:
-        """Create analysis prompt based on findings and type"""
+        """Create analysis prompt based on findings and type with enhanced IDS-like detection"""
         sanitized_findings = sanitize_output(findings)
         
         if analysis_type == "security":
             return f"""
-            Analyze the following reconnaissance findings for security vulnerabilities and risks:
+            As an advanced Intrusion Detection System, analyze the following reconnaissance findings for security threats, vulnerabilities, and potential intrusion attempts:
             
             Target: {findings.get('target', 'Unknown')}
             Findings: {json.dumps(sanitized_findings, indent=2)}
             
-            Please provide:
-            1. Critical security vulnerabilities identified
-            2. Risk assessment (High/Medium/Low) for each finding
-            3. Specific recommendations for remediation
-            4. Attack vectors that could be exploited
-            5. Priority order for addressing issues
+            Please provide a detailed security analysis including:
+            1. Critical security threats and vulnerabilities detected
+                - Potential intrusion attempts or suspicious patterns
+                - Exposed services and vulnerabilities
+                - Misconfigurations that could lead to compromise
+            2. Risk Assessment
+                - Severity (Critical/High/Medium/Low) for each finding
+                - Likelihood of exploitation
+                - Potential impact on system security
+            3. Detailed Remediation Steps
+                - Immediate actions needed to prevent intrusion
+                - Security hardening recommendations
+                - Configuration fixes and updates required
+            4. Attack Vector Analysis
+                - Identified attack paths and entry points
+                - Potential exploitation scenarios
+                - Lateral movement possibilities
+            5. Priority-based Action Plan
+                - Emergency fixes (immediate action required)
+                - Short-term remediation steps
+                - Long-term security improvements
             
-            Format your response as structured JSON with sections: vulnerabilities, risks, recommendations, attack_vectors, priorities.
+            Format your response as structured JSON with sections: threats_detected, risk_assessment, remediation_steps, attack_vectors, action_plan, with clear categorization and priority levels.
             """
         elif analysis_type == "comprehensive":
             return f"""
-            Provide a comprehensive analysis of the following reconnaissance data:
+            As an advanced Security Information and Event Management (SIEM) system, provide a comprehensive analysis of the following reconnaissance data:
             
             Target: {findings.get('target', 'Unknown')}
             Findings: {json.dumps(sanitized_findings, indent=2)}
             
-            Please analyze:
-            1. Technology stack and architecture insights
-            2. Security posture assessment
-            3. Information disclosure risks
-            4. Business intelligence opportunities
-            5. Technical recommendations
-            6. Compliance considerations
+            Please analyze and provide:
+            1. Infrastructure Analysis
+                - Technology stack vulnerabilities
+                - Architecture security assessment
+                - Service exposure analysis
+            2. Threat Detection
+                - Suspicious patterns or behaviors
+                - Potential security incidents
+                - Anomaly detection results
+            3. Security Posture Evaluation
+                - Overall security stance
+                - Defense-in-depth assessment
+                - Security control effectiveness
+            4. Risk Analysis
+                - Information disclosure threats
+                - Attack surface evaluation
+                - Potential business impact
+            5. Compliance Status
+                - Security standard adherence
+                - Regulatory compliance gaps
+                - Required security controls
+            6. Actionable Intelligence
+                - Critical security alerts
+                - Recommended monitoring rules
+                - Security improvement roadmap
             
-            Format your response as structured analysis with clear sections and actionable insights.
+            Format your response as a comprehensive security analysis with clear sections for threats, risks, compliance, and actionable recommendations.
             """
         else:
-            return f"Analyze these reconnaissance findings: {json.dumps(sanitized_findings, indent=2)}"
+            return f"Analyze these reconnaissance findings for security threats and intrusion indicators: {json.dumps(sanitized_findings, indent=2)}"
 
     def _parse_analysis(self, analysis: str) -> Dict[str, Any]:
-        """Parse AI analysis response into structured format"""
+        """Parse AI analysis response into structured format with enhanced IDS insights"""
         try:
             # Try to extract JSON if present
             json_match = re.search(r'\{.*\}', analysis, re.DOTALL)
             if json_match:
-                parsed = json.loads(json_match.group())
-                return {**parsed, "raw_analysis": analysis}
-        except:
-            pass
+                try:
+                    parsed = json.loads(json_match.group())
+                    
+                    # Validate and structure the parsed data
+                    structured_analysis = {
+                        "threats_detected": parsed.get("threats_detected", []),
+                        "risk_assessment": parsed.get("risk_assessment", {}),
+                        "remediation_steps": parsed.get("remediation_steps", []),
+                        "attack_vectors": parsed.get("attack_vectors", []),
+                        "action_plan": parsed.get("action_plan", {}),
+                        "security_score": self._calculate_security_score(parsed),
+                        "raw_analysis": analysis
+                    }
+                    
+                    # Add threat summary
+                    critical_threats = [t for t in structured_analysis["threats_detected"] 
+                                     if isinstance(t, dict) and t.get("severity", "").lower() == "critical"]
+                    high_threats = [t for t in structured_analysis["threats_detected"] 
+                                  if isinstance(t, dict) and t.get("severity", "").lower() == "high"]
+                    
+                    structured_analysis["threat_summary"] = {
+                        "critical_count": len(critical_threats),
+                        "high_count": len(high_threats),
+                        "total_threats": len(structured_analysis["threats_detected"]),
+                        "immediate_actions_required": len(critical_threats) > 0 or len(high_threats) > 0
+                    }
+                    
+                    return structured_analysis
+                except json.JSONDecodeError:
+                    logger.warning("Failed to parse JSON from AI response, falling back to text analysis")
+        except Exception as e:
+            logger.warning(f"Error during analysis parsing: {e}")
         
-        # Fallback to text analysis
+        # Fallback to enhanced text analysis
+        return self._fallback_text_analysis(analysis)
+
+    def _calculate_security_score(self, parsed_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Calculate a security score based on the AI analysis results"""
+        score = 100  # Start with perfect score
+        threat_weights = {"critical": 20, "high": 10, "medium": 5, "low": 2}
+        
+        # Reduce score based on detected threats
+        threats = parsed_data.get("threats_detected", [])
+        for threat in threats:
+            if isinstance(threat, dict):
+                severity = threat.get("severity", "").lower()
+                score -= threat_weights.get(severity, 0)
+        
+        # Ensure score stays within 0-100 range
+        score = max(0, min(100, score))
+        
+        return {
+            "score": score,
+            "rating": "Critical" if score < 40 else "High Risk" if score < 60 
+                     else "Medium Risk" if score < 80 else "Low Risk",
+            "factors": {
+                "threat_count": len(threats),
+                "severity_distribution": {
+                    severity: len([t for t in threats 
+                                 if isinstance(t, dict) and t.get("severity", "").lower() == severity])
+                    for severity in threat_weights.keys()
+                }
+            }
+        }
+
+    def _fallback_text_analysis(self, analysis: str) -> Dict[str, Any]:
+        """Enhanced fallback analysis when JSON parsing fails"""
+        # Extract key sections using regex patterns
+        threats = re.findall(r'(?i)(?:critical|high|medium|low)(?:\s+risk)?\s*[:-]\s*([^\n]+)', analysis)
+        remediation = re.findall(r'(?i)(?:recommendation|remediation|fix)[:\s-]+([^\n]+)', analysis)
+        
         return {
             "raw_analysis": analysis,
-            "summary": analysis[:500] + "..." if len(analysis) > 500 else analysis
+            "summary": analysis[:500] + "..." if len(analysis) > 500 else analysis,
+            "extracted_insights": {
+                "potential_threats": threats,
+                "remediation_suggestions": remediation,
+                "analysis_length": len(analysis),
+                "timestamp": datetime.now().isoformat()
+            }
         }
 
 def sanitize_output(data: Dict) -> Dict:
@@ -248,52 +365,183 @@ def is_failed_finding(value: Any) -> bool:
     return False
     
 def calculate_risk_score(findings: Dict[str, Any]) -> Dict[str, Any]:
-    """Calculate overall risk score based on findings"""
+    """Calculate comprehensive risk score with enhanced IDS-like detection"""
     # Filter successful findings first
     filtered_findings = filter_successful_findings(findings)
     
     risk_factors = {
-        'open_ports': 0,
-        'outdated_software': 0,
-        'misconfigurations': 0,
-        'information_disclosure': 0,
-        'ssl_issues': 0
+        'network_exposure': {
+            'score': 0,
+            'details': [],
+            'weight': 1.5  # Higher weight for network-related risks
+        },
+        'service_vulnerabilities': {
+            'score': 0,
+            'details': [],
+            'weight': 2.0  # Highest weight for vulnerabilities
+        },
+        'misconfigurations': {
+            'score': 0,
+            'details': [],
+            'weight': 1.2
+        },
+        'information_disclosure': {
+            'score': 0,
+            'details': [],
+            'weight': 1.3
+        },
+        'security_controls': {
+            'score': 0,
+            'details': [],
+            'weight': 1.4
+        }
     }
     
-    total_score = 0
-    max_score = 100
-    
-    # Analyze different modules for risk factors
+    # Analyze different modules for risk factors with enhanced detection
     for module, data in filtered_findings.items():
         if module == 'target':
             continue
             
-        if 'ports' in module.lower() or 'scan' in module.lower():
-            if isinstance(data, dict) and 'open_ports' in str(data):
-                risk_factors['open_ports'] += 10
+        # Network exposure analysis
+        if any(x in module.lower() for x in ['ports', 'scan', 'network']):
+            if isinstance(data, dict):
+                # Analyze open ports
+                if 'open_ports' in str(data):
+                    ports = str(data).count('open_ports')
+                    risk_factors['network_exposure']['score'] += ports * 5
+                    risk_factors['network_exposure']['details'].append(
+                        f"Found {ports} open ports - increasing attack surface"
+                    )
+                
+                # Check for high-risk ports
+                high_risk_ports = ['21', '23', '445', '3389', '5432', '6379', '27017']
+                for port in high_risk_ports:
+                    if port in str(data):
+                        risk_factors['network_exposure']['score'] += 15
+                        risk_factors['network_exposure']['details'].append(
+                            f"High-risk port {port} detected"
+                        )
         
+        # Service vulnerability analysis
+        if any(x in module.lower() for x in ['vuln', 'cve', 'security']):
+            if isinstance(data, dict):
+                # Count severe vulnerabilities
+                severity_scores = {
+                    'critical': 25,
+                    'high': 15,
+                    'medium': 8,
+                    'low': 3
+                }
+                
+                for severity, score in severity_scores.items():
+                    count = str(data).lower().count(severity)
+                    if count > 0:
+                        risk_factors['service_vulnerabilities']['score'] += count * score
+                        risk_factors['service_vulnerabilities']['details'].append(
+                            f"Found {count} {severity} severity vulnerabilities"
+                        )
+        
+        # Security control analysis
         if 'headers' in module.lower():
             if isinstance(data, dict):
                 # Check for security headers
-                security_headers = ['x-frame-options', 'x-content-type-options', 'strict-transport-security']
-                missing_headers = sum(1 for header in security_headers if header not in str(data).lower())
-                risk_factors['misconfigurations'] += missing_headers * 5
+                security_headers = {
+                    'x-frame-options': 5,
+                    'x-content-type-options': 5,
+                    'strict-transport-security': 8,
+                    'content-security-policy': 10,
+                    'x-xss-protection': 5
+                }
+                
+                for header, importance in security_headers.items():
+                    if header not in str(data).lower():
+                        risk_factors['security_controls']['score'] += importance
+                        risk_factors['security_controls']['details'].append(
+                            f"Missing {header} security header"
+                        )
         
-        if 'ssl' in module.lower() or 'tls' in module.lower():
-            if isinstance(data, dict) and 'error' in str(data).lower():
-                risk_factors['ssl_issues'] += 15
+        # SSL/TLS analysis
+        if any(x in module.lower() for x in ['ssl', 'tls']):
+            if isinstance(data, dict):
+                if 'error' in str(data).lower():
+                    risk_factors['security_controls']['score'] += 20
+                    risk_factors['security_controls']['details'].append(
+                        "SSL/TLS configuration issues detected"
+                    )
+                
+                # Check for weak protocols
+                weak_protocols = ['sslv2', 'sslv3', 'tlsv1.0', 'tlsv1.1']
+                for protocol in weak_protocols:
+                    if protocol in str(data).lower():
+                        risk_factors['security_controls']['score'] += 15
+                        risk_factors['security_controls']['details'].append(
+                            f"Weak protocol {protocol} enabled"
+                        )
+        
+        # Information disclosure analysis
+        if any(x in module.lower() for x in ['info', 'disclosure', 'leak']):
+            if isinstance(data, dict):
+                sensitive_patterns = [
+                    'version', 'internal', 'private', 'debug',
+                    'backup', 'config', 'admin', 'test'
+                ]
+                for pattern in sensitive_patterns:
+                    if pattern in str(data).lower():
+                        risk_factors['information_disclosure']['score'] += 8
+                        risk_factors['information_disclosure']['details'].append(
+                            f"Potential information disclosure: {pattern}"
+                        )
     
-    total_score = sum(risk_factors.values())
-    risk_level = "LOW" if total_score < 20 else "MEDIUM" if total_score < 50 else "HIGH"
+    # Calculate weighted total score
+    total_score = sum(
+        factor['score'] * factor['weight']
+        for factor in risk_factors.values()
+    )
+    
+    # Normalize to 0-100 range
+    max_possible_score = 500  # Theoretical maximum
+    normalized_score = min((total_score / max_possible_score) * 100, 100)
+    
+    # Determine risk level with more granular categories
+    risk_level = (
+        "CRITICAL" if normalized_score >= 80
+        else "HIGH" if normalized_score >= 60
+        else "MEDIUM" if normalized_score >= 40
+        else "LOW" if normalized_score >= 20
+        else "INFO"
+    )
     
     return {
-        'total_score': min(total_score, max_score),
+        'total_score': round(normalized_score, 2),
         'risk_level': risk_level,
-        'factors': risk_factors
+        'factors': {
+            name: {
+                'score': round(data['score'], 2),
+                'weighted_score': round(data['score'] * data['weight'], 2),
+                'details': data['details']
+            }
+            for name, data in risk_factors.items()
+        },
+        'summary': {
+            'highest_risk_factors': sorted(
+                [
+                    (name, data['score'] * data['weight'])
+                    for name, data in risk_factors.items()
+                    if data['score'] > 0
+                ],
+                key=lambda x: x[1],
+                reverse=True
+            )[:3],
+            'total_findings': sum(
+                len(data['details'])
+                for data in risk_factors.values()
+            ),
+            'immediate_action_required': normalized_score >= 60
+        }
     }
 
 def generate_advanced_report(findings: Dict[str, Any], ai_analysis: Dict[str, Any] = None) -> str:
-    """Generate advanced security-focused report"""
+    """Generate advanced security-focused report with enhanced IDS insights"""
     # Filter successful findings
     filtered_findings = filter_successful_findings(findings)
     
@@ -309,21 +557,49 @@ def generate_advanced_report(findings: Dict[str, Any], ai_analysis: Dict[str, An
         "",
         "---",
         "",
-        "## EXECUTIVE SUMMARY",
-        f"This report presents the security assessment findings for {target}. ",
-        f"The overall risk level is assessed as {risk_assessment['risk_level']} based on multiple security factors.",
-        f"Only successful reconnaissance results are included in this analysis.",
+        "## ⚠️ EXECUTIVE SUMMARY",
+        f"This report presents a comprehensive security assessment for {target}, combining advanced reconnaissance with IDS-like threat detection.",
         "",
-        "## RISK ASSESSMENT BREAKDOWN"
+        f"🎯 Overall Risk Level: {risk_assessment['risk_level']}",
+        f"📊 Security Score: {risk_assessment['total_score']}/100",
+        "🚨 Immediate Action Required: " + ("YES" if risk_assessment.get('summary', {}).get('immediate_action_required', False) else "NO"),
+        "",
+        "### Key Findings",
     ]
     
-    for factor, score in risk_assessment['factors'].items():
-        if score > 0:
-            report.append(f"- {factor.replace('_', ' ').title()}: {score} points")
+    # Add highest risk factors
+    if risk_assessment.get('summary', {}).get('highest_risk_factors'):
+        report.append("Top Risk Factors:")
+        for factor, score in risk_assessment['summary']['highest_risk_factors']:
+            report.append(f"- {factor.replace('_', ' ').title()}: {round(score, 2)} points")
     
     report.extend([
         "",
-        "## SECURITY FINDINGS ANALYSIS",
+        "---",
+        "",
+        "## 🔍 DETAILED RISK ASSESSMENT"
+    ])
+    
+    # Add detailed risk factors
+    for factor_name, factor_data in risk_assessment['factors'].items():
+        if factor_data['score'] > 0 or factor_data['details']:
+            report.extend([
+                f"### {factor_name.replace('_', ' ').title()}",
+                f"Score: {factor_data['score']} (Weight: {factor_data.get('weight', 1.0)}x)",
+                f"Weighted Impact: {factor_data['weighted_score']}",
+                "",
+                "Findings:"
+            ])
+            
+            for detail in factor_data['details']:
+                report.append(f"- {detail}")
+            
+            report.append("")
+    
+    report.extend([
+        "---",
+        "",
+        "## 🛡️ SECURITY ANALYSIS",
         ""
     ])
     
@@ -498,7 +774,7 @@ def generate_comprehensive_report(findings: Dict[str, Any], ai_analysis: Dict[st
     return '\n'.join(report)
 
 def generate_html_report(findings: Dict[str, Any], template_dir: str, report_type: str = "advanced", ai_analysis: Dict[str, Any] = None) -> str:
-    """Generate HTML report with enhanced styling and AI insights"""
+    """Generate HTML report with enhanced IDS insights and modern styling"""
     try:
         env = Environment(loader=FileSystemLoader(template_dir))
         template = env.get_template('enhanced_report.html')
@@ -510,31 +786,95 @@ def generate_html_report(findings: Dict[str, Any], template_dir: str, report_typ
         successful_modules = len([k for k in filtered_findings.keys() if k != 'target'])
         total_modules = len([k for k in findings.keys() if k != 'target'])
         
+        # Prepare risk data for visualization
+        risk_data = {
+            'labels': [],
+            'scores': [],
+            'weights': [],
+            'weighted_scores': [],
+            'details_count': []
+        }
+        
+        for factor_name, factor_data in risk_assessment['factors'].items():
+            risk_data['labels'].append(factor_name.replace('_', ' ').title())
+            risk_data['scores'].append(factor_data['score'])
+            risk_data['weights'].append(factor_data.get('weight', 1.0))
+            risk_data['weighted_scores'].append(factor_data['weighted_score'])
+            risk_data['details_count'].append(len(factor_data.get('details', [])))
+        
+        # Prepare threat summary
+        threat_summary = {
+            'total_threats': risk_assessment.get('summary', {}).get('total_findings', 0),
+            'critical_issues': len([
+                d for f in risk_assessment['factors'].values()
+                for d in f.get('details', [])
+                if 'critical' in d.lower()
+            ]),
+            'high_risk_issues': len([
+                d for f in risk_assessment['factors'].values()
+                for d in f.get('details', [])
+                if 'high' in d.lower()
+            ]),
+            'immediate_action': risk_assessment.get('summary', {}).get('immediate_action_required', False)
+        }
+        
         return template.render(
             target=filtered_findings.get('target', 'Unknown'),
             timestamp=datetime.now().isoformat(),
             findings=sanitize_output(filtered_findings),
             report_type=report_type,
             risk_assessment=risk_assessment,
+            risk_data=risk_data,
+            threat_summary=threat_summary,
             ai_analysis=ai_analysis or {},
             module_count=successful_modules,
             total_modules=total_modules,
             success_rate=round(successful_modules/total_modules*100 if total_modules > 0 else 0, 1),
-            has_ai_analysis=ai_analysis is not None and 'error' not in ai_analysis
+            has_ai_analysis=ai_analysis is not None and 'error' not in ai_analysis,
+            css_framework="tailwind",  # Using Tailwind CSS for modern styling
+            icons={  # Font Awesome icons for better visualization
+                'warning': 'fas fa-exclamation-triangle',
+                'info': 'fas fa-info-circle',
+                'success': 'fas fa-check-circle',
+                'error': 'fas fa-times-circle',
+                'security': 'fas fa-shield-alt',
+                'network': 'fas fa-network-wired',
+                'vulnerability': 'fas fa-bug',
+                'config': 'fas fa-cogs',
+                'disclosure': 'fas fa-user-secret'
+            }
         )
     except Exception as e:
         logger.error(f"HTML report generation failed: {e}")
-        # Fallback to basic HTML with filtered findings
+        # Enhanced fallback with basic styling
         filtered_findings = filter_successful_findings(findings)
+        risk_assessment = calculate_risk_score(filtered_findings)
+        
         return f"""
+        <!DOCTYPE html>
         <html>
-        <head><title>Recon Report - {filtered_findings.get('target', 'Unknown')}</title></head>
-        <body>
-        <h1>Reconnaissance Report</h1>
-        <h2>Target: {filtered_findings.get('target', 'Unknown')}</h2>
-        <h3>Generated: {datetime.now().isoformat()}</h3>
-        <h4>Note: Only successful findings are displayed</h4>
-        <pre>{json.dumps(sanitize_output(filtered_findings), indent=2)}</pre>
+        <head>
+            <title>Security Assessment - {filtered_findings.get('target', 'Unknown')}</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        </head>
+        <body class="bg-gray-100 p-8">
+            <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+                <h1 class="text-3xl font-bold mb-4">Security Assessment Report</h1>
+                <h2 class="text-xl mb-2">Target: {filtered_findings.get('target', 'Unknown')}</h2>
+                <div class="mb-4 p-4 {'bg-red-100 text-red-700' if risk_assessment['risk_level'] in ['HIGH', 'CRITICAL'] else 'bg-yellow-100 text-yellow-700' if risk_assessment['risk_level'] == 'MEDIUM' else 'bg-green-100 text-green-700'} rounded">
+                    <p class="font-bold">Risk Level: {risk_assessment['risk_level']}</p>
+                    <p>Security Score: {risk_assessment['total_score']}/100</p>
+                </div>
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-2">Findings Summary</h3>
+                    <pre class="bg-gray-50 p-4 rounded overflow-auto">{json.dumps(sanitize_output(filtered_findings), indent=2)}</pre>
+                </div>
+                <footer class="text-sm text-gray-500 mt-4">
+                    Generated: {datetime.now().isoformat()}<br>
+                    Note: This is a fallback report with limited formatting.
+                </footer>
+            </div>
         </body>
         </html>
         """
