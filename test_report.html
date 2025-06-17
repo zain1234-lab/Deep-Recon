@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDS Security Assessment - Test Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-red': '#DC2626',
+                        'custom-yellow': '#D97706',
+                        'custom-blue': '#2563EB'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            body { background: white !important; }
+            .shadow-lg { box-shadow: none !important; }
+            .bg-gray-100 { background-color: white !important; }
+            .page-break { page-break-before: always; }
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .focus-visible:focus {
+            outline: 2px solid #2563EB;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-8 min-h-screen">
+    <div class="max-w-4xl mx-auto space-y-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-lg p-6 card-hover">
+            <div class="flex flex-col md:flex-row md:items-center gap-4">
+                <i class="fas fa-shield-alt text-4xl text-blue-600"></i>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Security Assessment Report</h1>
+                    <h2 class="text-lg md:text-xl text-gray-600 mt-2">Target: example.com</h2>
+                </div>
+            </div>
+            <div class="mt-6 bg-red-100 text-red-800 p-4 rounded-lg border border-red-200">
+                <div class="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                        <p class="font-bold text-lg">Risk Level: HIGH</p>
+                        <p class="text-base mt-1">Security Score: 65/100</p>
+                    </div>
+                    <div class="flex items-center gap-2 bg-red-200 px-4 py-2 rounded-full">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span class="font-semibold">Immediate Action Required</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Threat Summary -->
+        <div class="bg-white rounded-lg shadow-lg p-6 card-hover">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-gray-900">
+                <i class="fas fa-chart-bar text-blue-600"></i>
+                Threat Summary
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-red-50 p-4 rounded-lg border border-red-100 card-hover">
+                    <p class="text-lg font-semibold text-gray-900">Critical Issues</p>
+                    <div class="flex items-end gap-2 mt-2">
+                        <p class="text-3xl font-bold text-red-600">3</p>
+                        <p class="text-red-600 mb-1">detected</p>
+                    </div>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100 card-hover">
+                    <p class="text-lg font-semibold text-gray-900">High Risk Issues</p>
+                    <div class="flex items-end gap-2 mt-2">
+                        <p class="text-3xl font-bold text-yellow-600">5</p>
+                        <p class="text-yellow-600 mb-1">detected</p>
+                    </div>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 card-hover">
+                    <p class="text-lg font-semibold text-gray-900">Total Findings</p>
+                    <div class="flex items-end gap-2 mt-2">
+                        <p class="text-3xl font-bold text-blue-600">12</p>
+                        <p class="text-blue-600 mb-1">issues</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Assessment -->
+        <div class="bg-white rounded-lg shadow-lg p-6 card-hover page-break">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-gray-900">
+                <i class="fas fa-search text-blue-600"></i>
+                Risk Assessment
+            </h2>
+            
+            <div class="space-y-6">
+                <!-- Network Exposure -->
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 card-hover">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center gap-3 text-gray-900">
+                        <i class="fas fa-network-wired text-gray-600"></i>
+                        Network Exposure
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex flex-wrap gap-4">
+                            <div class="bg-white px-4 py-2 rounded-lg border border-gray-200">
+                                <p class="text-sm text-gray-600">Score</p>
+                                <p class="text-lg font-semibold">75 <span class="text-sm text-gray-500">(Weight: 1.5x)</span></p>
+                            </div>
+                            <div class="bg-white px-4 py-2 rounded-lg border border-gray-200">
+                                <p class="text-sm text-gray-600">Weighted Impact</p>
+                                <p class="text-lg font-semibold">112.5</p>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <p class="flex items-center gap-2 text-red-600">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Found 3 high-risk open ports
+                            </p>
+                            <p class="flex items-center gap-2 text-yellow-600">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Exposed administrative interfaces
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Service Vulnerabilities -->
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 card-hover">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center gap-3 text-gray-900">
+                        <i class="fas fa-bug text-gray-600"></i>
+                        Service Vulnerabilities
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex flex-wrap gap-4">
+                            <div class="bg-white px-4 py-2 rounded-lg border border-gray-200">
+                                <p class="text-sm text-gray-600">Score</p>
+                                <p class="text-lg font-semibold">85 <span class="text-sm text-gray-500">(Weight: 2.0x)</span></p>
+                            </div>
+                            <div class="bg-white px-4 py-2 rounded-lg border border-gray-200">
+                                <p class="text-sm text-gray-600">Weighted Impact</p>
+                                <p class="text-lg font-semibold">170</p>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <p class="flex items-center gap-2 text-red-600">
+                                <i class="fas fa-times-circle"></i>
+                                Critical SQL injection vulnerability
+                            </p>
+                            <p class="flex items-center gap-2 text-red-600">
+                                <i class="fas fa-times-circle"></i>
+                                Outdated software versions
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Controls -->
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 card-hover">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center gap-3 text-gray-900">
+                        <i class="fas fa-cogs text-gray-600"></i>
+                        Security Controls
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex flex-wrap gap-4">
+                            <div class="bg-white px-4 py-2 rounded-lg border border-gray-200">
+                                <p class="text-sm text-gray-600">Score</p>
+                                <p class="text-lg font-semibold">45 <span class="text-sm text-gray-500">(Weight: 1.4x)</span></p>
+                            </div>
+                            <div class="bg-white px-4 py-2 rounded-lg border border-gray-200">
+                                <p class="text-sm text-gray-600">Weighted Impact</p>
+                                <p class="text-lg font-semibold">63</p>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <p class="flex items-center gap-2 text-yellow-600">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Missing security headers
+                            </p>
+                            <p class="flex items-center gap-2 text-yellow-600">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Weak SSL configuration
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Analysis -->
+        <div class="bg-white rounded-lg shadow-lg p-6 card-hover page-break">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-gray-900">
+                <i class="fas fa-brain text-blue-600"></i>
+                AI Security Analysis
+            </h2>
+            <div class="space-y-6">
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 card-hover">
+                    <h3 class="text-xl font-semibold mb-4">Critical Threats Detected</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">
+                            <i class="fas fa-times-circle"></i>
+                            <span>SQL Injection vulnerability in login form</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">
+                            <i class="fas fa-times-circle"></i>
+                            <span>Exposed administrative interface on port 8080</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">
+                            <i class="fas fa-times-circle"></i>
+                            <span>Outdated WordPress version with known exploits</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 card-hover">
+                    <h3 class="text-xl font-semibold mb-4">Recommended Actions</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 text-green-600 bg-green-50 p-3 rounded-lg border border-green-100">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Immediately patch SQL injection vulnerability</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-green-600 bg-green-50 p-3 rounded-lg border border-green-100">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Restrict administrative interface access</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-green-600 bg-green-50 p-3 rounded-lg border border-green-100">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Update WordPress to latest version</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-green-600 bg-green-50 p-3 rounded-lg border border-green-100">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Implement missing security headers</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-white rounded-lg shadow-lg p-6 card-hover">
+            <div class="text-sm text-gray-600">
+                <div class="flex flex-wrap gap-4">
+                    <p>Generated: 2024-01-20T10:30:00Z</p>
+                    <p>Report ID: SEC-2024-0120-001</p>
+                </div>
+                <p class="mt-4 text-blue-600">Enhanced Security Assessment by Deep-Recon v2.0</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
